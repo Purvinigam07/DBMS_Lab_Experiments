@@ -594,3 +594,422 @@ SELECT CustomerID
 FROM Customers
 GROUP BY CustomerID
 HAVING COUNT(*) > 1;
+
+
+CREATE TABLE BankAccount (
+    AccountID INT PRIMARY KEY,
+    AccountHolder VARCHAR(50),
+    Balance DECIMAL(10,2)
+);
+
+INSERT INTO BankAccount
+VALUES
+(101, 'Aman', 10000),
+(102, 'Riya', 8000),
+(103, 'Rahul', 12000);
+
+SELECT * FROM BankAccount;
+
+
+
+
+
+
+
+
+
+BEGIN;
+
+UPDATE BankAccount
+SET Balance = Balance - 1000
+WHERE AccountID = 101;
+
+UPDATE BankAccount
+SET Balance = Balance + 1000
+WHERE AccountID = 102;
+
+COMMIT;
+
+SELECT * FROM BankAccount;
+
+BEGIN;
+
+UPDATE BankAccount
+SET Balance = Balance - 2000
+WHERE AccountID = 101;
+
+UPDATE BankAccount
+SET Balance = Balance + 2000
+WHERE AccountID = 102;
+ROLLBACK;
+
+SELECT * FROM BankAccount;
+
+BEGIN;
+
+UPDATE BankAccount
+SET Balance = Balance - 500
+WHERE AccountID = 101;
+
+SAVEPOINT sp1;
+
+UPDATE BankAccount
+SET Balance = Balance + 500
+WHERE AccountID = 102;
+
+ROLLBACK TO SAVEPOINT sp1;
+
+COMMIT;
+
+BEGIN;
+
+UPDATE BankAccount
+SET Balance = Balance - 1000
+WHERE AccountID = 101;
+
+-- Simulate failure
+
+ROLLBACK;
+
+SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+BEGIN;
+
+UPDATE BankAccount
+SET Balance = 5000
+WHERE AccountID = 101;
+
+SELECT Balance
+FROM BankAccount
+WHERE AccountID = 101;
+
+ROLLBACK;
+
+BEGIN;
+
+SELECT Balance
+FROM BankAccount
+WHERE AccountID = 101;
+
+UPDATE BankAccount
+SET Balance = Balance + 1000
+WHERE AccountID = 101;
+
+COMMIT;
+
+
+SELECT Balance
+FROM BankAccount
+WHERE AccountID = 101;
+
+BEGIN;
+
+SELECT *
+FROM BankAccount
+WHERE Balance > 5000;
+
+INSERT INTO BankAccount
+VALUES (104, 'Neha', 7000);
+
+COMMIT;
+
+SELECT *
+FROM BankAccount
+WHERE Balance > 5000;
+
+CREATE TABLE RailwayBooking (
+    BookingID INT PRIMARY KEY,
+    PassengerName VARCHAR(50),
+    TrainNumber INT,
+    SourceStation VARCHAR(50),
+    DestinationStation VARCHAR(50),
+    TravelDate DATE,
+    SeatNumber INT,
+    Class VARCHAR(20),
+    Fare DECIMAL(10,2)
+);
+
+INSERT INTO RailwayBooking
+(BookingID, PassengerName, TrainNumber, SourceStation,
+ DestinationStation, TravelDate, SeatNumber, Class, Fare)
+VALUES
+(1, 'Aman', 12001, 'Delhi', 'Lucknow', '2026-11-01', 1, 'AC', 1500),
+(2, 'Riya', 12002, 'Kanpur', 'Delhi', '2026-11-02', 2, 'Sleeper', 800),
+(3, 'Rahul', 12003, 'Lucknow', 'Kanpur', '2026-11-03', 3, 'AC', 1000);
+
+SELECT COUNT(*) AS TotalBookings
+FROM RailwayBooking;
+
+SELECT *
+FROM RailwayBooking
+LIMIT 10;
+
+SELECT *
+FROM RailwayBooking
+WHERE PassengerName = 'Aman';
+
+EXPLAIN
+SELECT *
+FROM RailwayBooking
+WHERE PassengerName = 'Aman';
+
+CREATE INDEX idx_passenger_name
+ON RailwayBooking(PassengerName);
+
+SHOW INDEX FROM RailwayBooking;
+
+SELECT *
+FROM RailwayBooking
+WHERE PassengerName = 'Aman';
+
+EXPLAIN
+SELECT *
+FROM RailwayBooking
+WHERE PassengerName = 'Aman';
+
+CREATE INDEX idx_route
+ON RailwayBooking(SourceStation, DestinationStation);
+
+SELECT *
+FROM RailwayBooking
+WHERE SourceStation = 'Delhi'
+AND DestinationStation = 'Lucknow';
+
+EXPLAIN
+SELECT *
+FROM RailwayBooking
+WHERE SourceStation = 'Delhi'
+AND DestinationStation = 'Lucknow';
+
+DROP INDEX idx_passenger_name
+ON RailwayBooking;
+
+DROP INDEX idx_route
+ON RailwayBooking;
+
+CREATE DATABASE QueryOptimizationDB;
+USE QueryOptimizationDB;
+
+CREATE TABLE EmployeeSales (
+    SaleID INT PRIMARY KEY,
+    EmployeeID INT,
+    EmployeeName VARCHAR(50),
+    Department VARCHAR(30),
+    City VARCHAR(30),
+    Product VARCHAR(50),
+    SaleAmount DECIMAL(10,2),
+    SaleDate DATE
+);
+
+SET SESSION cte_max_recursion_depth = 10000;
+
+INSERT INTO EmployeeSales
+(
+    SaleID,
+    EmployeeID,
+    EmployeeName,
+    Department,
+    City,
+    Product,
+    SaleAmount,
+    SaleDate
+)
+WITH RECURSIVE Numbers AS
+(
+    SELECT 1 AS n
+
+    UNION ALL
+
+    SELECT n + 1
+    FROM Numbers
+    WHERE n < 10000
+)
+SELECT
+    n AS SaleID,
+
+    ((n - 1) % 100) + 1 AS EmployeeID,
+
+    CONCAT('Employee_', ((n - 1) % 100) + 1) AS EmployeeName,
+
+    CASE
+        WHEN n % 5 = 0 THEN 'IT'
+        WHEN n % 5 = 1 THEN 'HR'
+        WHEN n % 5 = 2 THEN 'Sales'
+        WHEN n % 5 = 3 THEN 'Finance'
+        ELSE 'Marketing'
+    END AS Department,
+
+    CASE
+        WHEN n % 5 = 0 THEN 'Delhi'
+        WHEN n % 5 = 1 THEN 'Lucknow'
+        WHEN n % 5 = 2 THEN 'Kanpur'
+        WHEN n % 5 = 3 THEN 'Mumbai'
+        ELSE 'Pune'
+    END AS City,
+
+    CASE
+        WHEN n % 4 = 0 THEN 'Laptop'
+        WHEN n % 4 = 1 THEN 'Mobile'
+        WHEN n % 4 = 2 THEN 'Tablet'
+        ELSE 'Monitor'
+    END AS Product,
+
+    (500 + (n % 5000)) AS SaleAmount,
+
+    DATE_ADD('2025-01-01', INTERVAL (n % 365) DAY) AS SaleDate
+
+FROM Numbers;
+
+SELECT COUNT(*) AS TotalRecords
+FROM EmployeeSales;
+
+SELECT *
+FROM EmployeeSales
+LIMIT 10;
+
+SELECT *
+FROM EmployeeSales
+WHERE EmployeeName = 'Employee_25';
+
+EXPLAIN
+SELECT *
+FROM EmployeeSales
+WHERE EmployeeName = 'Employee_25';
+CREATE INDEX idx_employee_name
+ON EmployeeSales(EmployeeName);
+
+SELECT *
+FROM EmployeeSales
+WHERE EmployeeName = 'Employee_25';
+
+EXPLAIN
+SELECT *
+FROM EmployeeSales
+WHERE EmployeeName = 'Employee_25';
+
+SELECT *
+FROM EmployeeSales
+WHERE Department = 'IT'
+AND City = 'Delhi';
+
+EXPLAIN
+SELECT *
+FROM EmployeeSales
+WHERE Department = 'IT'
+AND City = 'Delhi';
+
+CREATE INDEX idx_department_city
+ON EmployeeSales(Department, City);
+
+SELECT *
+FROM EmployeeSales
+WHERE Department = 'IT'
+AND City = 'Delhi';
+
+EXPLAIN
+SELECT *
+FROM EmployeeSales
+WHERE Department = 'IT'
+AND City = 'Delhi';
+
+SELECT *
+FROM EmployeeSales
+WHERE YEAR(SaleDate) = 2025;
+
+EXPLAIN
+SELECT *
+FROM EmployeeSales
+WHERE YEAR(SaleDate) = 2025;
+
+SELECT *
+FROM EmployeeSales
+WHERE SaleDate >= '2025-01-01'
+AND SaleDate < '2026-01-01';
+
+CREATE INDEX idx_sale_date
+ON EmployeeSales(SaleDate);
+
+EXPLAIN
+SELECT *
+FROM EmployeeSales
+WHERE SaleDate >= '2025-01-01'
+AND SaleDate < '2026-01-01';
+
+SELECT *
+FROM EmployeeSales
+WHERE EmployeeName LIKE '%25%';
+
+EXPLAIN
+SELECT *
+FROM EmployeeSales
+WHERE EmployeeName LIKE '%25%';
+
+SELECT *
+FROM EmployeeSales
+WHERE EmployeeName LIKE 'Employee_25%';
+
+EXPLAIN
+SELECT *
+FROM EmployeeSales
+WHERE EmployeeName LIKE 'Employee_25%';
+
+SELECT Department, SUM(SaleAmount) AS TotalSales
+FROM EmployeeSales
+WHERE City = 'Delhi'
+GROUP BY Department;
+
+EXPLAIN
+SELECT Department, SUM(SaleAmount) AS TotalSales
+FROM EmployeeSales
+WHERE City = 'Delhi'
+GROUP BY Department;
+
+CREATE INDEX idx_city_department
+ON EmployeeSales(City, Department);
+
+SELECT Department, SUM(SaleAmount) AS TotalSales
+FROM EmployeeSales
+WHERE City = 'Delhi'
+GROUP BY Department;
+
+EXPLAIN
+SELECT Department, SUM(SaleAmount) AS TotalSales
+FROM EmployeeSales
+WHERE City = 'Delhi'
+GROUP BY Department;
+
+SHOW INDEX FROM EmployeeSales;
+
+EXPLAIN ANALYZE
+SELECT *
+FROM EmployeeSales
+WHERE EmployeeName = 'Employee_25';
+
+EXPLAIN ANALYZE
+SELECT *
+FROM EmployeeSales
+WHERE YEAR(SaleDate) = 2025;
+
+EXPLAIN ANALYZE
+SELECT *
+FROM EmployeeSales
+WHERE SaleDate >= '2025-01-01'
+AND SaleDate < '2026-01-01';
+
+DROP INDEX idx_employee_name
+ON EmployeeSales;
+
+DROP INDEX idx_department_city
+ON EmployeeSales;
+
+DROP INDEX idx_sale_date
+ON EmployeeSales;
+
+DROP INDEX idx_city_department
+ON EmployeeSales;
