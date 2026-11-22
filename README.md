@@ -304,7 +304,7 @@ Certificate/
 
 You can view it here:
 
-[View SQL Basic Certificate] 
+[View SQL Basic Certificate](https://github.com/Purvinigam07/DBMS_Lab_Experiments/blob/main/sql_basic%20certificate.pdf)
 
 ---
 
